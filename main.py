@@ -21,7 +21,7 @@ HELP = """GTG matbot
 intents = discord.Intents.default()
 intents.message_content = True
 
-bot = commands.Bot(command_prefix='?', intents=intents)
+bot = commands.Bot(command_prefix='?', intents=intents, help_command=None)
 
 @bot.event
 async def on_command_error(ctx, error):
@@ -59,7 +59,12 @@ async def meny(ctx, resturang: str | None):
     msg = await asyncio.gather(asyncio.to_thread(scraper.get_food, resturang, True),)
     await ctx.send(msg[0])
 
+@commands.command()
+async def help(ctx):
+    await prep(ctx)
+    ctx.send(HELP)
 
 bot.add_command(mat)
 bot.add_command(meny)
+bot.add_command(help)
 bot.run(TOKEN)

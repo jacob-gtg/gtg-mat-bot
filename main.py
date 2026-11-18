@@ -62,7 +62,7 @@ async def meny(ctx, resturang: str | None):
 @commands.command()
 async def help(ctx):
     await prep(ctx)
-    ctx.send(HELP)
+    await ctx.send(HELP)
 
 bot.add_command(mat)
 bot.add_command(meny)

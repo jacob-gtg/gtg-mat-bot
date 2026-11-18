@@ -11,7 +11,7 @@ ENDPOINTS = {
 USER_AGENT = "gtg-mat-bot-(jacob.borstell@gtg.se)"
 HEADERS = {"User-Agent": USER_AGENT}
 
-def get_food(resturang: str | None=None) -> str:
+def get_food(resturang: str | None=None, meny: bool=False) -> str:
     rest = resturang.lower() if (resturang is not None) else "träffpunkten"
     if not (rest in ENDPOINTS):
         return "Välj en giltig resturang (`träffpunkten`, `höjden`, `backyard`, `balansen`)"
@@ -19,21 +19,35 @@ def get_food(resturang: str | None=None) -> str:
     soup = BeautifulSoup(resp.text, 'html.parser')
 
     try:
-        info = soup.body.find('section', attrs={"class": "castit-day current"})
-        day = info.find("h3", attrs={"class": "castit-day__title"}).span.text.strip()
-        dishes = info.find_all("div", attrs={"class": "castit-dish-wrap"})
+        days_elements = (
+            soup.body.find('div',
+                           attrs={"class": "castit-menu-grid__days castit-menu-grid__days--with-week"}))
+        dagar = []
+        if meny:
+            text = f"# Meny på {rest} denna vecka:\n"
+            fake_dagar = list(days_elements.children)
+            for fake_dag in fake_dagar:
+                if fake_dag.name == "section":
+                    dagar.append(fake_dag)
+        else:
+            text = f"# Mat på {rest} idag:\n"
+            dagar.append(days_elements.find('section', attrs={"class": "castit-day current"}))
 
-        text = f"# Mat på {rest} idag ({day}):\n\n"
+        for dag in dagar:
+            day = dag.find("h3", attrs={"class": "castit-day__title"}).span.text.strip()
+            dishes = dag.find_all("div", attrs={"class": "castit-dish-wrap"})
 
-        for dish in dishes:
-            type_ = (dish.find("div", attrs={"class": "castit-dish-header castit-dish-header--day"})
-                     .span.text.strip())
-            name = dish.find("div", attrs={"class": "castit-dish__title"}).span.text.strip()
-            try:
-                desc = dish.find("div", attrs={"class": "castit-dish__desc"}).span.text.strip()
-            except AttributeError as e:
-                desc = ""
-            text = text + "## " + type_ + "\n" + "**" + name + "**\n" + desc + "\n\n"
+            text = text + "\n## " + day + "\n"
+
+            for dish in dishes:
+                type_ = (dish.find("div", attrs={"class": "castit-dish-header castit-dish-header--day"})
+                         .span.text.strip())
+                name = dish.find("div", attrs={"class": "castit-dish__title"}).span.text.strip()
+                try:
+                    desc = dish.find("div", attrs={"class": "castit-dish__desc"}).span.text.strip() + "\n"
+                except AttributeError as e:
+                    desc = ""
+                text = text + "## " + type_ + "\n" + "**" + name + "**\n" + desc
 
         return text
     except AttributeError as e:
@@ -42,4 +56,4 @@ def get_food(resturang: str | None=None) -> str:
 
 
 if __name__ == "__main__":
-    print(get_food("balansen"))
+    print(get_food("träffpunkten", True))

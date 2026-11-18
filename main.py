@@ -59,13 +59,7 @@ async def meny(ctx, resturang: str | None):
     msg = await asyncio.gather(asyncio.to_thread(scraper.get_food, resturang, True),)
     await ctx.send(msg[0])
 
-@commands.command()
-async def help(ctx):
-    await prep(ctx)
 
-    await ctx.send(HELP)
-
-bot.add_command(help)
 bot.add_command(mat)
 bot.add_command(meny)
 bot.run(TOKEN)

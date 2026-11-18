@@ -30,21 +30,22 @@ async def on_command_error(ctx, error):
     else:
         raise error
 
-async def prep(ctx):
+async def cooldown(ctx) -> bool:
     global last
     if ctx.channel.name != "commands":
         await ctx.send('Kör komandot i #commands')
-        return
+        return True
 
     if (time() - last) < COOLDOWN:
         await ctx.send(f"Spamma inte komandot! (vänta {str(int(COOLDOWN + last - time()))} sekunder)")
-        return
+        return True
 
     last = time()
+    return False
 
 @commands.command()
 async def mat(ctx, resturang: str | None):
-    await prep(ctx)
+    if await cooldown(ctx): return
 
     await ctx.send('Hämtar maten idag...')
     msg = await asyncio.gather(asyncio.to_thread(scraper.get_food, resturang, False),)
@@ -53,7 +54,7 @@ async def mat(ctx, resturang: str | None):
 
 @commands.command()
 async def meny(ctx, resturang: str | None):
-    await prep(ctx)
+    if await cooldown(ctx): return
 
     await ctx.send('Hämtar menyn för veckan...')
     msg = await asyncio.gather(asyncio.to_thread(scraper.get_food, resturang, True),)
@@ -61,7 +62,7 @@ async def meny(ctx, resturang: str | None):
 
 @commands.command()
 async def help(ctx):
-    await prep(ctx)
+    if await cooldown(ctx): return
     await ctx.send(HELP)
 
 bot.add_command(mat)

@@ -20,8 +20,8 @@ async def mat(ctx, resturang: str | None):
         await ctx.send('Kör komandot i #commands')
         return
 
-    if (time() - last) < 60:
-        await ctx.send(f"Spamma inte komandot! (vänta {str(int(60 + last - time()))} sekunder)")
+    if (time() - last) < 40:
+        await ctx.send(f"Spamma inte komandot! (vänta {str(int(40 + last - time()))} sekunder)")
         return
 
     last = time()

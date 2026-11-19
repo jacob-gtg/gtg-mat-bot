@@ -34,7 +34,7 @@ async def on_command_error(ctx, error):
 async def cooldown(ctx: discord.ext.commands.Context) -> bool:
     global last
     if ctx.channel.name != "commands":
-        await ctx.author.send("Kör kommandot i #commands istället")
+        await ctx.send("Kör kommandot i #commands istället")
         return True
 
     if (time() - last) < COOLDOWN:

@@ -1,6 +1,7 @@
 import asyncio
 import discord
-import scraper
+import nordrest_scraper
+import provschema_scraper
 from discord.ext import commands
 from time import time
 import os
@@ -30,10 +31,10 @@ async def on_command_error(ctx, error):
     else:
         raise error
 
-async def cooldown(ctx) -> bool:
+async def cooldown(ctx: discord.ext.commands.Context) -> bool:
     global last
     if ctx.channel.name != "commands":
-        await ctx.send('Kör komandot i #commands')
+        await ctx.author.send("Kör kommandot i #commands istället")
         return True
 
     if (time() - last) < COOLDOWN:
@@ -47,8 +48,7 @@ async def cooldown(ctx) -> bool:
 async def mat(ctx, resturang: str | None):
     if await cooldown(ctx): return
 
-    await ctx.send('Hämtar maten idag...')
-    msg = await asyncio.gather(asyncio.to_thread(scraper.get_food, resturang, False),)
+    msg = await asyncio.gather(asyncio.to_thread(nordrest_scraper.get_food, resturang, False), )
     await ctx.send(msg[0])
 
 
@@ -56,8 +56,14 @@ async def mat(ctx, resturang: str | None):
 async def meny(ctx, resturang: str | None):
     if await cooldown(ctx): return
 
-    await ctx.send('Hämtar menyn för veckan...')
-    msg = await asyncio.gather(asyncio.to_thread(scraper.get_food, resturang, True),)
+    msg = await asyncio.gather(asyncio.to_thread(nordrest_scraper.get_food, resturang, True), )
+    await ctx.send(msg[0])
+
+@commands.command()
+async def prov(ctx):
+    if await cooldown(ctx): return
+
+    msg = await asyncio.gather(asyncio.to_thread(provschema_scraper.get_prov))
     await ctx.send(msg[0])
 
 @commands.command()
@@ -67,5 +73,6 @@ async def help(ctx):
 
 bot.add_command(mat)
 bot.add_command(meny)
+bot.add_command(prov)
 bot.add_command(help)
 bot.run(TOKEN)

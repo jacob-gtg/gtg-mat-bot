@@ -5,6 +5,7 @@ import provschema_scraper
 from discord.ext import commands
 from time import time
 import os
+import datetime
 
 TOKEN = os.getenv("BOT_TOKEN")
 last = 0
@@ -63,8 +64,10 @@ async def meny(ctx, resturang: str | None):
 async def prov(ctx):
     if await cooldown(ctx): return
 
-    msg = await asyncio.gather(asyncio.to_thread(provschema_scraper.get_prov))
-    await ctx.send(msg[0])
+    embed = (await asyncio.gather(asyncio.to_thread(provschema_scraper.get_prov)))[0]
+    print(embed)
+    await ctx.send(embed=embed)
+
 
 @commands.command()
 async def help(ctx):

@@ -1,6 +1,8 @@
 import requests
 from bs4 import BeautifulSoup
 import traceback
+from datetime import datetime
+import discord
 
 from nordrest_scraper import HEADERS
 
@@ -23,18 +25,33 @@ def rm_reg(l: list[str]):
     return res
 
 def get_prov():
+    now = datetime.now()
+
     resp = requests.get(ENDPOINT, headers=HEADERS)
     soup = BeautifulSoup(resp.text, 'html.parser')
 
     table_f = soup.body.find("table", attrs={"class": "normal"})
     rows = table_f.find_all("tr")
-    output = ""
+
+    embed = discord.Embed(
+        title="Kommande prov",
+        url="https://www.gtc.com/provschema/kalender.asp?klass=T1cs",
+        color=discord.Color.blue(),
+    )
+
+
+    cnt = 0
     for row in rows:
         children = list(row.children)
         if len(children) == 1: # är ett spacing-element
             continue
 
-        # week = row.find("a").text
+        week = int(row.find("a").text.strip().lstrip("v."))
+
+        if week == now.isocalendar().week: cnt = 3
+        if not cnt:
+            continue
+
         days = list(row.find_all("td", attrs={"valign": "top"}))[1:]
         for day in days:
             if not (day.find_all("span", attrs={"class": "normalröd"})
@@ -50,9 +67,16 @@ def get_prov():
             day, content_l = text_lines[0], text_lines[1:]
             content_l = rm_reg(content_l)
             content = "\n".join(x.strip() for x in content_l)
-            output = output + day + "\n" + content + "\n"
+            embed.add_field(
+                name=day,
+                value=content,
+                inline=False
+            )
 
-    return output
+            cnt -= 1
+            if not cnt: break
+
+    return embed
 
 
 

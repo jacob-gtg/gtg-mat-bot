@@ -2,22 +2,25 @@ import asyncio
 import discord
 import nordrest_scraper
 import provschema_scraper
-from discord.ext import commands
-from time import time
 import os
 import datetime
+from discord.ext import commands
+from time import time
+from helpers import error
 
 TOKEN = os.getenv("BOT_TOKEN")
 last = 0
 
 COOLDOWN = 20
-HELP = """GTG matbot
+HELP = """GTG utils
 `?mat <resturang>`: visa maten på en viss resturang
 `?meny <resturang>`: visa veckans meny för en resturang
-`?hemsida <resturang>`: skicka en länk till hemsidan av en resturang (WORK IN PROGRESS)
+`?prov`: visa kommande prov
 `?help`: visa hjälp
+`?idag`: visa maten idag på båda resturanger
+`?imorgon`: visa maten imorgon på båda resturanger
 
-`<resturang>` kan vara `träffpunkten`, `höjden`, `balansen`, `backyard` eller lämnas tomt för träffpunkten
+`<resturang>` kan vara `träffpunkten`, `höjden` eller lämnas tomt för träffpunkten
 """
 
 intents = discord.Intents.default()
@@ -49,23 +52,50 @@ async def cooldown(ctx: discord.ext.commands.Context) -> bool:
 async def mat(ctx, resturang: str | None):
     if await cooldown(ctx): return
 
-    msg = await asyncio.gather(asyncio.to_thread(nordrest_scraper.get_food, resturang, False), )
-    await ctx.send(msg[0])
+    embed = (await asyncio.gather(asyncio.to_thread(nordrest_scraper.get_food, resturang)))[0]
+    await ctx.send(embed=embed)
 
 
 @commands.command()
 async def meny(ctx, resturang: str | None):
     if await cooldown(ctx): return
 
-    msg = await asyncio.gather(asyncio.to_thread(nordrest_scraper.get_food, resturang, True), )
-    await ctx.send(msg[0])
+    for i in range(5):
+        # Vi använder inte gather här, eftersom cachen är mer effektiv
+        embed = (await asyncio.gather(asyncio.to_thread(nordrest_scraper.get_food, resturang, i)))[0]
+        await ctx.send(embed=embed)
+
+@commands.command()
+async def idag(ctx):
+    if await cooldown(ctx): return
+
+    embed = (await asyncio.gather(asyncio.to_thread(nordrest_scraper.get_food, "träffpunkten")))[0]
+    await ctx.send(embed=embed)
+
+    embed = (await asyncio.gather(asyncio.to_thread(nordrest_scraper.get_food, "höjden")))[0]
+    await ctx.send(embed=embed)
+
+@commands.command()
+async def imorgon(ctx):
+    if await cooldown(ctx): return
+
+    dag = datetime.datetime.now().isocalendar().weekday # vi subtraherar inte
+    if dag > 4:
+        return error("Imorgon är inte en arbetsdag")
+
+    embed = (await asyncio.gather(asyncio.to_thread(
+        nordrest_scraper.get_food, "träffpunkten", dag)))[0]
+    await ctx.send(embed=embed)
+
+    embed = (await asyncio.gather(asyncio.to_thread(
+        nordrest_scraper.get_food,"höjden", dag)))[0]
+    await ctx.send(embed=embed)
 
 @commands.command()
 async def prov(ctx):
     if await cooldown(ctx): return
 
     embed = (await asyncio.gather(asyncio.to_thread(provschema_scraper.get_prov)))[0]
-    print(embed)
     await ctx.send(embed=embed)
 
 
@@ -76,6 +106,11 @@ async def help(ctx):
 
 bot.add_command(mat)
 bot.add_command(meny)
+bot.add_command(idag)
+bot.add_command(imorgon)
+
 bot.add_command(prov)
+
 bot.add_command(help)
+
 bot.run(TOKEN)

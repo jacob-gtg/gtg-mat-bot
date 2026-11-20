@@ -1,58 +1,69 @@
-import requests
 from bs4 import BeautifulSoup
 import traceback
+import discord
+from helpers import error, CachedEndpoint
 
 ENDPOINTS = {
-    "träffpunkten": "https://www.nordrest.se/restaurang/restaurang-traffpunkten/",
-    "höjden": "https://www.nordrest.se/restaurang/restaurang-hojden/",
-    "backyard": "https://www.nordrest.se/restaurang/backyard/",
-    "balansen": "https://www.nordrest.se/restaurang/restaurang-balansen/",
+    "träffpunkten": CachedEndpoint("https://www.nordrest.se/restaurang/restaurang-traffpunkten/"),
+    "höjden": CachedEndpoint("https://www.nordrest.se/restaurang/restaurang-hojden/"),
 }
-USER_AGENT = "gtg-mat-bot-(jacob.borstell@gtg.se)"
-HEADERS = {"User-Agent": USER_AGENT}
 
-def get_food(resturang: str | None=None, meny: bool=False) -> str:
+def get_food(resturang: str | None=None, dag_idx: int | None=None) -> discord.Embed:
+    print(dag_idx)
+
     rest = resturang.lower() if (resturang is not None) else "träffpunkten"
     if not (rest in ENDPOINTS):
-        return "Välj en giltig resturang (`träffpunkten`, `höjden`, `backyard`, `balansen`)"
-    resp = requests.get(ENDPOINTS[rest], headers=HEADERS)
+        return error("Välj en giltig resturang (`träffpunkten`, `höjden`)")
+
+    endpoint = ENDPOINTS[rest]
+    resp = endpoint.request()
     soup = BeautifulSoup(resp.text, 'html.parser')
 
     try:
-        days_elements = (
-            soup.body.find('div',
+        days_elements = (soup.body.find('div',
                            attrs={"class": "castit-menu-grid__days castit-menu-grid__days--with-week"}))
-        dagar = []
-        if meny:
-            text = f"# Meny på {rest} denna vecka:\n"
+
+        dag = None
+        if not (dag_idx is None):
             fake_dagar = list(days_elements.children)
+            cc = 0
             for fake_dag in fake_dagar:
                 if fake_dag.name == "section":
-                    dagar.append(fake_dag)
+                    if cc == dag_idx:
+                        dag = fake_dag
+                        break
+                    else:
+                        cc += 1
         else:
-            text = f"# Mat på {rest} idag:\n"
-            dagar.append(days_elements.find('section', attrs={"class": "castit-day current"}))
+            dag = days_elements.find('section', attrs={"class": "castit-day current"})
 
-        for dag in dagar:
-            day = dag.find("h3", attrs={"class": "castit-day__title"}).span.text.strip()
-            dishes = dag.find_all("div", attrs={"class": "castit-dish-wrap"})
+        if dag is None:
+            return error("Dagen kunde inte hittas")
 
-            text = text + "\n## " + day + "\n"
+        dag_namn = dag.find("h3", attrs={"class": "castit-day__title"}).span.text.strip()
+        dishes = dag.find_all("div", attrs={"class": "castit-dish-wrap"})
 
-            for dish in dishes:
-                type_ = (dish.find("div", attrs={"class": "castit-dish-header castit-dish-header--day"})
-                         .span.text.strip())
-                name = dish.find("div", attrs={"class": "castit-dish__title"}).span.text.strip()
-                try:
-                    desc = dish.find("div", attrs={"class": "castit-dish__desc"}).span.text.strip() + "\n"
-                except AttributeError as e:
-                    desc = ""
-                text = text + "## " + type_ + "\n" + "**" + name + "**\n" + desc
+        embed = discord.Embed(
+            title=dag_namn + " (" + rest + ")",
+            url=endpoint.url,
+            color=discord.Color.blue(),
+        )
 
-        return text
+        for dish in dishes:
+            type_ = (dish.find("div", attrs={"class": "castit-dish-header castit-dish-header--day"})
+                     .span.text.strip())
+            name = dish.find("div", attrs={"class": "castit-dish__title"}).span.text.strip()
+            try:
+                desc = dish.find("div", attrs={"class": "castit-dish__desc"}).span.text.strip() + "\n"
+            except AttributeError as e:
+                desc = ""
+            embed.add_field(name=type_ + ": " + name, value=desc, inline=False)
+
+        return embed
+
     except AttributeError as e:
         print(traceback.format_exc())
-        return "Ett fel inträffade när nordrests hemsida skulle tolkas"
+        return error("Ett fel inträffade när hemsidan skulle tolkas")
 
 
 if __name__ == "__main__":

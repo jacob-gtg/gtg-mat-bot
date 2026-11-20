@@ -1,12 +1,10 @@
 import requests
 from bs4 import BeautifulSoup
-import traceback
 from datetime import datetime
 import discord
+from helpers import CachedEndpoint
 
-from nordrest_scraper import HEADERS
-
-ENDPOINT = "https://www.gtc.com/provschema/kalender.asp?klass=T1cs"
+ENDPOINT = CachedEndpoint("https://www.gtc.com/provschema/kalender.asp?klass=T1cs")
 MONTHS = ["Januari", "Februari", "Mars", "April", "Maj", "Juni",
           "Juli", "Augusti", "September", "Oktober", "November", "December"]
 
@@ -27,7 +25,7 @@ def rm_reg(l: list[str]):
 def get_prov():
     now = datetime.now()
 
-    resp = requests.get(ENDPOINT, headers=HEADERS)
+    resp = ENDPOINT.request()
     soup = BeautifulSoup(resp.text, 'html.parser')
 
     table_f = soup.body.find("table", attrs={"class": "normal"})
@@ -38,7 +36,6 @@ def get_prov():
         url="https://www.gtc.com/provschema/kalender.asp?klass=T1cs",
         color=discord.Color.blue(),
     )
-
 
     cnt = 0
     for row in rows:

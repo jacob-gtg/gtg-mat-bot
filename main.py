@@ -27,6 +27,8 @@ intents = discord.Intents.default()
 intents.message_content = True
 
 bot = commands.Bot(command_prefix='?', intents=intents, help_command=None)
+allowed_mentions = discord.AllowedMentions(everyone = True)
+
 
 @bot.event
 async def on_command_error(ctx, error):
@@ -100,9 +102,41 @@ async def prov(ctx):
 
 
 @commands.command()
+async def suggest_time(ctx):
+    channel = discord.utils.get(ctx.guild.channels, name='dnd-tider')
+    if channel is None: return
+
+    now = datetime.datetime.now()
+
+    embed = discord.Embed(
+        title="DnD Tidförslag",
+        color=discord.Color.blue(),
+    )
+    embed.add_field(
+        name=f"Kan du spela DnD {discord.utils.format_dt(now, style='F')}?",
+        value="Reagera med ✅ eller ❌",
+        inline=False
+    )
+
+    msg: discord.Message = await channel.send(
+        embed=embed,
+        content="@everyone",
+        allowed_mentions=allowed_mentions
+    )
+    await msg.add_reaction("✅")
+    await msg.add_reaction("❌")
+
+@commands.command()
+async def resistance(ctx: discord.ext.commands.Context):
+    await ctx.message.delete()
+    author = ctx.author
+    await author.send("Join the resistance!\nhttps://discord.gg/njz24tQ6Uh")
+
+@commands.command()
 async def help(ctx):
     if await cooldown(ctx): return
     await ctx.send(HELP)
+
 
 bot.add_command(mat)
 bot.add_command(meny)
@@ -110,8 +144,9 @@ bot.add_command(idag)
 bot.add_command(imorgon)
 
 bot.add_command(prov)
-
+bot.add_command(suggest_time)
 bot.add_command(help)
+bot.add_command(resistance)
 
 bot.run(TOKEN)
 

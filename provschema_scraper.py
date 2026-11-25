@@ -45,12 +45,19 @@ def get_prov():
 
         week = int(row.find("a").text.strip().lstrip("v."))
 
-        if week == now.isocalendar().week: cnt = 3
-        if not cnt:
-            continue
+        if week != now.isocalendar().week:
+            if cnt <= 0:
+                continue
 
         days = list(row.find_all("td", attrs={"valign": "top"}))[1:]
+        day_idx = 0
         for day in days:
+            day_idx += 1
+            if (week == now.isocalendar().week) and (day_idx == now.isocalendar().weekday):
+                cnt = 3
+
+            if cnt <= 0: continue
+
             if not (day.find_all("span", attrs={"class": "normalröd"})
                     or day.find_all("span", attrs={"class": "normalblå"})
                     or day.find_all("b")):
@@ -71,7 +78,7 @@ def get_prov():
             )
 
             cnt -= 1
-            if not cnt: break
+
 
     return embed
 

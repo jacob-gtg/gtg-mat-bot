@@ -79,8 +79,8 @@ async def idag(ctx):
 async def imorgon(ctx):
     if await cooldown(ctx): return
 
-    dag = datetime.datetime.now().isocalendar().weekday # vi subtraherar inte
-    if dag > 4:
+    dag = datetime.datetime.now().isocalendar().weekday  # vi subtraherar inte
+    if dag > 4:         
         return error("Imorgon är inte en arbetsdag")
 
     embed = (await asyncio.gather(asyncio.to_thread(
@@ -114,3 +114,4 @@ bot.add_command(prov)
 bot.add_command(help)
 
 bot.run(TOKEN)
+

@@ -133,6 +133,12 @@ async def resistance(ctx: discord.ext.commands.Context):
     await author.send("Join the resistance!\nhttps://discord.gg/njz24tQ6Uh")
 
 @commands.command()
+async def svartamarknaden(ctx: discord.ext.commands.Context):
+    await ctx.message.delete()
+    author = ctx.author
+    await author.send("Berätta inte för någon...\nhttps://svartamarknaden.borstell.dev/")
+
+@commands.command()
 async def help(ctx):
     if await cooldown(ctx): return
     await ctx.send(HELP)
@@ -147,6 +153,7 @@ bot.add_command(prov)
 bot.add_command(suggest_time)
 bot.add_command(help)
 bot.add_command(resistance)
+bot.add_command(svartamarknaden)
 
 bot.run(TOKEN)
 
